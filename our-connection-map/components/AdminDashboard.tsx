@@ -11,6 +11,7 @@ interface Props {
 
 const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
   const [participantCount, setParticipantCount] = useState(0);
+  const [readyCount, setReadyCount] = useState(0);
   const [showUserList, setShowUserList] = useState(false);
 
   // room.users가 undefined일 수 있으므로 안전하게 접근
@@ -18,7 +19,10 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
   const connections = room.connections || [];
 
   useEffect(() => {
-    setParticipantCount(Object.keys(users).length);
+    const userList = Object.values(users);
+    setParticipantCount(userList.length);
+    // 특징 10개를 모두 입력한 사용자 수
+    setReadyCount(userList.filter((u: User) => u.traits?.length === 10).length);
   }, [users]);
 
   const handleStart = () => {
@@ -55,6 +59,10 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
           <div className="text-right cursor-pointer group" onClick={() => setShowUserList(!showUserList)}>
             <p className="text-[10px] text-stone-400 font-bold uppercase">참여 인원</p>
             <p className="text-xl font-black text-rose-500 group-hover:scale-110 transition-transform">{participantCount}명</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[10px] text-stone-400 font-bold uppercase">준비 완료</p>
+            <p className="text-xl font-black text-emerald-500">{readyCount}명</p>
           </div>
           <div className="text-right">
             <p className="text-[10px] text-stone-400 font-bold uppercase">현재 상태</p>
@@ -111,36 +119,55 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
               </button>
             </div>
             <div className="space-y-3">
-              {Object.values(users).map((u: User) => (
-                <div key={u.id} className="bg-white p-4 rounded-2xl shadow-sm border border-stone-50 flex justify-between items-center group hover:border-orange-200 transition-all">
-                  <div>
-                    <p className="font-bold text-stone-800">{u.name}</p>
-                    <p className="text-[10px] text-stone-400 uppercase font-bold">{u.department}</p>
-                    <div className="flex items-center space-x-1 mt-1">
-                      <span className={`w-1.5 h-1.5 rounded-full ${u.currentMatchId ? 'bg-orange-500' : 'bg-emerald-400'}`}></span>
-                      <span className="text-[10px] text-stone-400 font-medium">{u.currentMatchId ? '대화 중' : '대기 중'}</span>
+              {Object.values(users).map((u: User) => {
+                const traitsCount = u.traits?.length || 0;
+                const isReady = traitsCount === 10;
+                return (
+                  <div key={u.id} className="bg-white p-4 rounded-2xl shadow-sm border border-stone-50 flex justify-between items-center group hover:border-orange-200 transition-all">
+                    <div>
+                      <p className={`font-bold ${u.currentMatchId ? 'text-rose-500' : isReady ? 'text-emerald-600' : 'text-stone-400'}`}>{u.name}</p>
+                      <p className="text-[10px] text-stone-400 uppercase font-bold">{u.department}</p>
+                      <div className="flex items-center space-x-1 mt-1">
+                        <span className={`w-1.5 h-1.5 rounded-full ${u.currentMatchId ? 'bg-rose-500 animate-pulse' : isReady ? 'bg-emerald-400' : 'bg-gray-300'}`}></span>
+                        <span className="text-[10px] text-stone-400 font-medium">
+                          {u.currentMatchId ? '대화 중' : isReady ? '준비 완료' : `특징 ${traitsCount}/10`}
+                        </span>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => handleRemoveUser(u.id, u.name)}
+                      className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-rose-500 transition-all"
+                    >
+                      <i className="fa-solid fa-user-minus"></i>
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => handleRemoveUser(u.id, u.name)}
-                    className="opacity-0 group-hover:opacity-100 text-stone-300 hover:text-rose-500 transition-all"
-                  >
-                    <i className="fa-solid fa-user-minus"></i>
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
 
         <div className="absolute bottom-10 right-10 z-10 flex flex-col space-y-3">
-            <div className="flex items-center space-x-3 bg-white/60 px-4 py-2 rounded-full border border-white">
-                <div className="w-2 h-2 bg-orange-400 rounded-full animate-ping"></div>
-                <span className="text-xs font-bold text-stone-500">실시간 데이터 시각화</span>
+            <div className="bg-white/80 px-4 py-3 rounded-2xl border border-white shadow-sm">
+              <p className="text-[10px] text-stone-400 font-bold uppercase mb-2">참가자 상태</p>
+              <div className="flex flex-col space-y-2">
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                  <span className="text-xs font-medium text-stone-600">특징 입력 중</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-emerald-500 rounded-full"></div>
+                  <span className="text-xs font-medium text-stone-600">특징 완료 (매칭 대기)</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-3 h-3 bg-rose-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-medium text-stone-600">대화 중</span>
+                </div>
+              </div>
             </div>
             <div className="flex items-center space-x-3 bg-white/60 px-4 py-2 rounded-full border border-white">
-                <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
-                <span className="text-xs font-bold text-stone-500">네트워크 맵 분석 중</span>
+                <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping"></div>
+                <span className="text-xs font-bold text-stone-500">실시간 데이터 시각화</span>
             </div>
         </div>
       </main>

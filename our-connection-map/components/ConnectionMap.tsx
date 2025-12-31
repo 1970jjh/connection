@@ -81,11 +81,19 @@ const ConnectionMap: React.FC<Props> = ({ users, connections }) => {
         .on('drag', dragged)
         .on('end', dragended));
 
+    // 색상 결정 함수: 특징 10개 완료 여부와 매칭 상태에 따라
+    const getNodeColor = (d: any) => {
+      if (d.currentMatchId) return '#ff6b6b'; // 대화 중 - 빨간색
+      const traitsCount = d.traits?.length || 0;
+      if (traitsCount === 10) return '#10b981'; // 특징 완료 - 초록색
+      return '#9ca3af'; // 미완료 - 회색
+    };
+
     // Circle Node
     node.append('circle')
       .attr('r', 40)
       .attr('fill', 'white')
-      .attr('stroke', d => d.currentMatchId ? '#ff6b6b' : '#ff9f40')
+      .attr('stroke', d => getNodeColor(d))
       .attr('stroke-width', 4)
       .attr('style', 'filter: url(#glow)')
       .attr('class', d => d.currentMatchId ? 'animate-pulse' : '');
@@ -96,14 +104,19 @@ const ConnectionMap: React.FC<Props> = ({ users, connections }) => {
       .attr('dominant-baseline', 'central')
       .attr('font-family', 'FontAwesome')
       .attr('font-size', '24px')
-      .attr('fill', d => d.currentMatchId ? '#ff6b6b' : '#ff9f40')
+      .attr('fill', d => getNodeColor(d))
       .text('\uf007');
 
     // Name
     node.append('text')
       .attr('y', 60)
       .attr('text-anchor', 'middle')
-      .attr('fill', '#4a3737')
+      .attr('fill', d => {
+        const traitsCount = d.traits?.length || 0;
+        if (d.currentMatchId) return '#ff6b6b'; // 대화 중 - 빨간색
+        if (traitsCount === 10) return '#10b981'; // 특징 완료 - 초록색
+        return '#9ca3af'; // 미완료 - 회색
+      })
       .attr('font-weight', '900')
       .attr('font-size', '13px')
       .text(d => d.name);
