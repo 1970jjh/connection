@@ -20,11 +20,16 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
   const [hasInitialized, setHasInitialized] = useState(user.traits.length === 10);
   const [showMatchSplash, setShowMatchSplash] = useState(false);
   const prevMatchId = useRef<string | undefined>(undefined);
+  const isFirstRender = useRef(true);
+
+  // room.users가 undefined일 수 있으므로 안전하게 접근
+  const users = room.users || {};
 
   useEffect(() => {
-    const updatedUser = room.users[user.id];
+    const updatedUser = users[user.id];
     if (updatedUser) {
       setCurrentUser(updatedUser);
+      isFirstRender.current = false;
       if (updatedUser.traits.length === 10 && !hasInitialized) {
         setHasInitialized(true);
       }
@@ -37,10 +42,11 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
         setTimeout(() => setShowMatchSplash(false), 2500);
       }
       prevMatchId.current = updatedUser.currentMatchId;
-    } else {
+    } else if (!isFirstRender.current) {
+      // 첫 렌더링이 아닐 때만 (이미 있던 사용자가 삭제된 경우)
       onGoBack();
     }
-  }, [room, user.id, hasInitialized, onGoBack]);
+  }, [users, user.id, hasInitialized, onGoBack]);
 
   const handleTraitsSubmit = (traits: string[]) => {
     store.updateUser({ id: user.id, traits });
