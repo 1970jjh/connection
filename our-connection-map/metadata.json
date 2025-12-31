@@ -1,0 +1,8 @@
+
+{
+  "name": "Our Connection Map",
+  "description": "A real-time networking application that visualizes human connections based on shared traits, featuring an admin dashboard and mobile-first participant experience.",
+  "requestFramePermissions": [
+    "vibrate"
+  ]
+}
