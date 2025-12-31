@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "buildCommand": "cd our-connection-map && npm install && npm run build",
+  "outputDirectory": "our-connection-map/dist",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/" }
+  ]
+}
