@@ -1,17 +1,15 @@
 // Firebase 설정 파일
-// 아래 값들을 본인의 Firebase 프로젝트 값으로 바꿔주세요!
-
 import { initializeApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 
-// ⚠️ 중요: 이 값들을 Firebase 콘솔에서 복사해서 붙여넣기 하세요!
+// Firebase 설정값
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "여기에-API-KEY-붙여넣기",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "여기에-AUTH-DOMAIN-붙여넣기",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "여기에-PROJECT-ID-붙여넣기",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "여기에-STORAGE-BUCKET-붙여넣기",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "여기에-SENDER-ID-붙여넣기",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "여기에-APP-ID-붙여넣기"
+  apiKey: "AIzaSyCh3LKixmsM9n41UL1s0d9g3tUZx8N4J9U",
+  authDomain: "connection-4df71.firebaseapp.com",
+  projectId: "connection-4df71",
+  storageBucket: "connection-4df71.firebasestorage.app",
+  messagingSenderId: "640050157914",
+  appId: "1:640050157914:web:e337c442b6533366c07b63"
 };
 
 // Firebase 초기화
