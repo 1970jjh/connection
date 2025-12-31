@@ -178,6 +178,11 @@ const JoinRoomModal: React.FC<{
   const [dept, setDept] = useState('');
   const [step, setStep] = useState(1);
 
+  const handleSelectRoom = (selectedRoomName: string) => {
+    setRoomName(selectedRoomName);
+    setStep(2);
+  };
+
   const handleSubmit = () => {
     if (roomName.trim() && name.trim() && dept.trim()) {
       onJoin(roomName.trim(), name.trim(), dept.trim());
@@ -230,39 +235,48 @@ const JoinRoomModal: React.FC<{
             <div className="space-y-6">
               <div>
                 <label className="block text-xs font-black text-stone-400 uppercase tracking-widest mb-3">
-                  과정명 (방 이름)
+                  입장할 과정을 선택하세요
                 </label>
-                <input
-                  type="text"
-                  value={roomName}
-                  onChange={(e) => setRoomName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && roomName.trim() && setStep(2)}
-                  placeholder="강사님이 알려주신 과정명"
-                  className="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl py-4 px-5 text-lg font-bold focus:border-orange-400 focus:outline-none transition-all"
-                  autoFocus
-                />
-                {currentRoom && (
-                  <p className="mt-3 text-sm text-orange-500 font-bold">
-                    <i className="fa-solid fa-info-circle mr-2"></i>
-                    현재 개설된 방: {currentRoom.name}
-                  </p>
+
+                {currentRoom ? (
+                  <button
+                    onClick={() => handleSelectRoom(currentRoom.name)}
+                    className="w-full bg-gradient-to-r from-orange-50 to-rose-50 border-2 border-orange-200 rounded-2xl p-5 text-left hover:border-orange-400 hover:shadow-lg hover:shadow-orange-100 transition-all group"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-lg font-black text-stone-800 group-hover:text-orange-600 transition-colors">
+                          {currentRoom.name}
+                        </p>
+                        <p className="text-sm text-stone-400 mt-1">
+                          <i className="fa-solid fa-users mr-2"></i>
+                          {Object.keys(currentRoom.users || {}).length}명 참여 중
+                        </p>
+                      </div>
+                      <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-orange-500 transition-all">
+                        <i className="fa-solid fa-arrow-right text-orange-400 group-hover:text-white transition-colors"></i>
+                      </div>
+                    </div>
+                  </button>
+                ) : (
+                  <div className="text-center py-8 bg-stone-50 rounded-2xl">
+                    <i className="fa-solid fa-door-closed text-4xl text-stone-300 mb-3"></i>
+                    <p className="text-stone-400 font-bold">개설된 방이 없습니다</p>
+                  </div>
                 )}
               </div>
-              <div className="flex gap-3">
-                <button onClick={handleClose} className="flex-1 py-4 rounded-2xl font-bold text-stone-400 bg-stone-100 hover:bg-stone-200 transition-all">취소</button>
-                <button
-                  onClick={() => setStep(2)}
-                  disabled={!roomName.trim()}
-                  className="flex-[2] py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-orange-400 to-rose-400 transition-all active:scale-[0.98] disabled:opacity-50"
-                >
-                  다음
-                </button>
-              </div>
+              <button onClick={handleClose} className="w-full py-4 rounded-2xl font-bold text-stone-400 bg-stone-100 hover:bg-stone-200 transition-all">
+                취소
+              </button>
             </div>
           )}
 
           {step === 2 && (
             <div className="space-y-6">
+              <div className="bg-orange-50 rounded-2xl p-4 mb-2">
+                <p className="text-xs text-orange-400 font-bold uppercase">선택한 과정</p>
+                <p className="text-lg font-black text-orange-600">{roomName}</p>
+              </div>
               <div>
                 <label className="block text-xs font-black text-stone-400 uppercase tracking-widest mb-3">
                   이름
@@ -294,6 +308,10 @@ const JoinRoomModal: React.FC<{
 
           {step === 3 && (
             <div className="space-y-6">
+              <div className="bg-orange-50 rounded-2xl p-4 mb-2">
+                <p className="text-xs text-orange-400 font-bold uppercase">선택한 과정</p>
+                <p className="text-lg font-black text-orange-600">{roomName}</p>
+              </div>
               <div>
                 <label className="block text-xs font-black text-stone-400 uppercase tracking-widest mb-3">
                   소속
