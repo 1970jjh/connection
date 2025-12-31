@@ -13,9 +13,13 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
   const [participantCount, setParticipantCount] = useState(0);
   const [showUserList, setShowUserList] = useState(false);
 
+  // room.users가 undefined일 수 있으므로 안전하게 접근
+  const users = room.users || {};
+  const connections = room.connections || [];
+
   useEffect(() => {
-    setParticipantCount(Object.keys(room.users).length);
-  }, [room.users]);
+    setParticipantCount(Object.keys(users).length);
+  }, [users]);
 
   const handleStart = () => {
     store.updateRoomStatus('running');
@@ -85,7 +89,7 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
       </header>
 
       <main className="flex-1 relative overflow-hidden">
-        <ConnectionMap users={Object.values(room.users)} connections={room.connections} />
+        <ConnectionMap users={Object.values(users)} connections={connections} />
 
         {/* Floating Message */}
         <div className="absolute top-10 left-10 z-10 p-8 bg-glass rounded-[2rem] max-w-sm pointer-events-none shadow-xl border-white/60">
@@ -107,7 +111,7 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
               </button>
             </div>
             <div className="space-y-3">
-              {Object.values(room.users).map((u: User) => (
+              {Object.values(users).map((u: User) => (
                 <div key={u.id} className="bg-white p-4 rounded-2xl shadow-sm border border-stone-50 flex justify-between items-center group hover:border-orange-200 transition-all">
                   <div>
                     <p className="font-bold text-stone-800">{u.name}</p>

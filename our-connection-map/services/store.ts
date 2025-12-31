@@ -28,7 +28,13 @@ class GameStore {
 
     this.unsubscribeFirestore = onSnapshot(roomRef, (snapshot) => {
       if (snapshot.exists()) {
-        this.state = snapshot.data() as Room;
+        const data = snapshot.data();
+        // users와 connections이 undefined일 수 있으므로 기본값 설정
+        this.state = {
+          ...data,
+          users: data.users || {},
+          connections: data.connections || [],
+        } as Room;
       } else {
         this.state = null;
       }
@@ -153,9 +159,14 @@ class GameStore {
     const snapshot = await getDoc(roomRef);
     if (!snapshot.exists()) return;
 
-    const currentRoom = snapshot.data() as Room;
+    const data = snapshot.data();
+    const currentRoom = {
+      ...data,
+      users: data.users || {},
+      connections: data.connections || [],
+    } as Room;
 
-    const availableUsers = Object.values(currentRoom.users).filter(
+    const availableUsers = Object.values(currentRoom.users || {}).filter(
       (u) => !u.currentMatchId && u.isOnline && u.traits.length === 10
     );
 
