@@ -1,0 +1,18 @@
+# 의존성
+node_modules/
+
+# 빌드 결과물
+dist/
+
+# 환경변수 (비밀번호가 들어있어서 절대 깃허브에 올리면 안됨!)
+.env
+.env.local
+.env.*.local
+
+# 에디터 설정
+.vscode/
+.idea/
+
+# 시스템 파일
+.DS_Store
+Thumbs.db
