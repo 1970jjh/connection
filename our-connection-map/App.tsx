@@ -11,9 +11,11 @@ const ADMIN_PASSWORD = "6749467";
 const AdminLoginModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (roomName: string) => void;
-}> = ({ isOpen, onClose, onSuccess }) => {
-  const [step, setStep] = useState<'password' | 'roomName'>('password');
+  onCreateRoom: (roomName: string) => void;
+  onEnterRoom: () => void;
+  currentRoom: Room | null;
+}> = ({ isOpen, onClose, onCreateRoom, onEnterRoom, currentRoom }) => {
+  const [step, setStep] = useState<'password' | 'choice' | 'createRoom'>('password');
   const [password, setPassword] = useState('');
   const [roomName, setRoomName] = useState('');
   const [error, setError] = useState('');
@@ -21,22 +23,23 @@ const AdminLoginModal: React.FC<{
 
   const handlePasswordSubmit = () => {
     if (password === ADMIN_PASSWORD) {
-      setStep('roomName');
+      setStep('choice');
       setError('');
     } else {
       setError('비밀번호가 틀렸습니다.');
     }
   };
 
-  const handleRoomSubmit = () => {
+  const handleCreateRoom = () => {
     if (roomName.trim()) {
-      onSuccess(roomName.trim());
-      // Reset
-      setStep('password');
-      setPassword('');
-      setRoomName('');
-      setError('');
+      onCreateRoom(roomName.trim());
+      handleClose();
     }
+  };
+
+  const handleEnterRoom = () => {
+    onEnterRoom();
+    handleClose();
   };
 
   const handleClose = () => {
@@ -66,7 +69,7 @@ const AdminLoginModal: React.FC<{
 
         {/* Content */}
         <div className="p-8">
-          {step === 'password' ? (
+          {step === 'password' && (
             <div className="space-y-6">
               <div>
                 <label className="block text-xs font-black text-stone-400 uppercase tracking-widest mb-3">
@@ -113,7 +116,9 @@ const AdminLoginModal: React.FC<{
                 </button>
               </div>
             </div>
-          ) : (
+          )}
+
+          {step === 'choice' && (
             <div className="space-y-6">
               <div className="text-center mb-6">
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -122,31 +127,91 @@ const AdminLoginModal: React.FC<{
                 <p className="text-green-600 font-bold">인증 완료!</p>
               </div>
 
+              {/* 기존 방이 있으면 입장 옵션 표시 */}
+              {currentRoom && (
+                <button
+                  onClick={handleEnterRoom}
+                  className="w-full bg-gradient-to-r from-orange-50 to-rose-50 border-2 border-orange-200 rounded-2xl p-5 text-left hover:border-orange-400 hover:shadow-lg hover:shadow-orange-100 transition-all group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-orange-500 font-bold uppercase mb-1">기존 방 입장</p>
+                      <p className="text-lg font-black text-stone-800 group-hover:text-orange-600 transition-colors">
+                        {currentRoom.name}
+                      </p>
+                      <p className="text-sm text-stone-400 mt-1">
+                        <i className="fa-solid fa-users mr-2"></i>
+                        {Object.keys(currentRoom.users || {}).length}명 참여 중
+                      </p>
+                    </div>
+                    <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-orange-500 transition-all">
+                      <i className="fa-solid fa-arrow-right text-orange-400 group-hover:text-white transition-colors"></i>
+                    </div>
+                  </div>
+                </button>
+              )}
+
+              {/* 새 방 개설 버튼 */}
+              <button
+                onClick={() => setStep('createRoom')}
+                className="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl p-5 text-left hover:border-stone-400 hover:shadow-lg transition-all group"
+              >
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-stone-400 font-bold uppercase mb-1">새로운 과정</p>
+                    <p className="text-lg font-black text-stone-800 group-hover:text-stone-600 transition-colors">
+                      새 방 개설하기
+                    </p>
+                    <p className="text-sm text-stone-400 mt-1">
+                      <i className="fa-solid fa-plus mr-2"></i>
+                      새로운 교육 과정 시작
+                    </p>
+                  </div>
+                  <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:bg-stone-800 transition-all">
+                    <i className="fa-solid fa-plus text-stone-400 group-hover:text-white transition-colors"></i>
+                  </div>
+                </div>
+              </button>
+
+              <button onClick={handleClose} className="w-full py-3 rounded-2xl font-bold text-stone-400 hover:text-stone-600 transition-all">
+                취소
+              </button>
+            </div>
+          )}
+
+          {step === 'createRoom' && (
+            <div className="space-y-6">
               <div>
                 <label className="block text-xs font-black text-stone-400 uppercase tracking-widest mb-3">
-                  과정명 (방 이름)
+                  새 과정명 (방 이름)
                 </label>
                 <input
                   type="text"
                   value={roomName}
                   onChange={(e) => setRoomName(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleRoomSubmit()}
+                  onKeyDown={(e) => e.key === 'Enter' && handleCreateRoom()}
                   placeholder="예: 12월 리더십 과정"
                   className="w-full bg-stone-50 border-2 border-stone-200 rounded-2xl py-4 px-5 text-lg font-bold focus:border-orange-400 focus:outline-none transition-all"
                   autoFocus
                 />
+                {currentRoom && (
+                  <p className="mt-3 text-sm text-rose-500 font-bold">
+                    <i className="fa-solid fa-exclamation-triangle mr-2"></i>
+                    기존 방 "{currentRoom.name}"이 초기화됩니다
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setStep('password')}
+                  onClick={() => setStep('choice')}
                   className="flex-1 py-4 rounded-2xl font-bold text-stone-400 bg-stone-100 hover:bg-stone-200 transition-all"
                 >
                   <i className="fa-solid fa-arrow-left mr-2"></i>
                   뒤로
                 </button>
                 <button
-                  onClick={handleRoomSubmit}
+                  onClick={handleCreateRoom}
                   disabled={!roomName.trim()}
                   className="flex-[2] py-4 rounded-2xl font-bold text-white bg-gradient-to-r from-rose-500 to-orange-500 hover:shadow-lg hover:shadow-orange-200 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
@@ -416,6 +481,18 @@ const App: React.FC = () => {
     });
   };
 
+  const handleEnterRoom = () => {
+    const room = store.getRoom();
+    if (room) {
+      setShowAdminModal(false);
+      setAppState({
+        activeRoom: room,
+        currentUser: null,
+        view: 'admin'
+      });
+    }
+  };
+
   const handleJoinRoom = async (roomName: string, name: string, dept: string) => {
     const room = store.getRoom();
     if (room && (room.name.trim() === roomName.trim())) {
@@ -517,7 +594,9 @@ const App: React.FC = () => {
       <AdminLoginModal
         isOpen={showAdminModal}
         onClose={() => setShowAdminModal(false)}
-        onSuccess={handleCreateRoom}
+        onCreateRoom={handleCreateRoom}
+        onEnterRoom={handleEnterRoom}
+        currentRoom={appState.activeRoom}
       />
       <JoinRoomModal
         isOpen={showJoinModal}
