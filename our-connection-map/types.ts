@@ -27,6 +27,10 @@ export interface Room {
   status: 'waiting' | 'running' | 'completed';
   users: Record<string, User>;
   connections: Connection[];
+  // 타이머 관련
+  timerDuration?: number; // 전체 진행 시간 (초)
+  timerStartedAt?: number; // 타이머 시작 시간 (timestamp)
+  timerEndAt?: number; // 타이머 종료 시간 (timestamp)
 }
 
 export type AppState = {

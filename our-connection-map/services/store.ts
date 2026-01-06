@@ -76,10 +76,23 @@ class GameStore {
     return newRoom;
   }
 
-  // 방 상태 변경
-  async updateRoomStatus(status: Room['status']) {
+  // 방 상태 변경 (타이머 포함)
+  async updateRoomStatus(status: Room['status'], timerDuration?: number) {
     const roomRef = doc(db, 'rooms', ROOM_DOC_ID);
-    await updateDoc(roomRef, { status });
+    const updates: Record<string, any> = { status };
+
+    if (status === 'running' && timerDuration) {
+      const now = Date.now();
+      updates.timerDuration = timerDuration;
+      updates.timerStartedAt = now;
+      updates.timerEndAt = now + timerDuration * 1000;
+    }
+
+    if (status === 'completed') {
+      // 종료 시 타이머 정보 유지 (결과 표시용)
+    }
+
+    await updateDoc(roomRef, updates);
 
     // 시작하면 바로 매칭 실행
     if (status === 'running') {
