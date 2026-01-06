@@ -503,6 +503,7 @@ const App: React.FC = () => {
         traits: [],
         isOnline: true,
         metUserIds: [],
+        score: 0,
       };
       await store.addUser(newUser);
       setShowJoinModal(false);

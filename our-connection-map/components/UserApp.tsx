@@ -34,14 +34,19 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
         setHasInitialized(true);
       }
 
-      if (updatedUser.currentMatchId && updatedUser.currentMatchId !== prevMatchId.current) {
+      // 2인 또는 3인 매칭 감지
+      const currentMatchKey = updatedUser.currentMatchIds?.length
+        ? updatedUser.currentMatchIds.sort().join('-')
+        : updatedUser.currentMatchId || '';
+
+      if (currentMatchKey && currentMatchKey !== prevMatchId.current) {
         setShowMatchSplash(true);
         if ('vibrate' in navigator) {
           navigator.vibrate([100, 50, 100]);
         }
         setTimeout(() => setShowMatchSplash(false), 2500);
       }
-      prevMatchId.current = updatedUser.currentMatchId;
+      prevMatchId.current = currentMatchKey;
     } else if (!isFirstRender.current) {
       // 첫 렌더링이 아닐 때만 (이미 있던 사용자가 삭제된 경우)
       onGoBack();
@@ -54,16 +59,33 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
     setActiveTab('connect');
   };
 
+  // 현재 매칭된 파트너들 가져오기
+  const getPartners = (): User[] => {
+    if (currentUser.currentMatchIds?.length) {
+      // 3인 매칭
+      return currentUser.currentMatchIds
+        .map(id => room.users[id])
+        .filter(Boolean);
+    } else if (currentUser.currentMatchId && room.users[currentUser.currentMatchId]) {
+      // 2인 매칭
+      return [room.users[currentUser.currentMatchId]];
+    }
+    return [];
+  };
+
+  const isMatched = currentUser.currentMatchId || currentUser.currentMatchIds?.length;
+  const partners = getPartners();
+
   const renderContent = () => {
     if (!hasInitialized) {
       return <TraitsForm onSubmit={handleTraitsSubmit} />;
     }
 
-    if (currentUser.currentMatchId && room.status === 'running') {
+    if (isMatched && partners.length > 0 && room.status === 'running') {
       return (
-        <MatchingSession 
-          user={currentUser} 
-          partner={room.users[currentUser.currentMatchId!]} 
+        <MatchingSession
+          user={currentUser}
+          partners={partners}
           onComplete={() => {}}
         />
       );
@@ -111,22 +133,32 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
   return (
     <div className="min-h-screen flex flex-col p-6 relative overflow-hidden">
       {/* Match Splash */}
-      {showMatchSplash && currentUser.currentMatchId && room.users[currentUser.currentMatchId] && (
-        <div className="fixed inset-0 z-[100] bg-white/90 backdrop-blur-3xl flex flex-col items-center justify-center p-10 animate-in fade-in duration-300">
+      {showMatchSplash && partners.length > 0 && (
+        <div className={`fixed inset-0 z-[100] ${partners.length === 2 ? 'bg-violet-50/90' : 'bg-white/90'} backdrop-blur-3xl flex flex-col items-center justify-center p-10 animate-in fade-in duration-300`}>
           <div className="relative mb-10">
-            <div className="absolute inset-0 bg-orange-400/20 blur-3xl animate-pulse"></div>
-            <div className="relative w-40 h-40 bg-gradient-to-tr from-orange-400 to-rose-400 rounded-[3rem] flex items-center justify-center shadow-2xl shadow-orange-200 animate-in zoom-in duration-500">
-              <i className="fa-solid fa-sparkles text-6xl text-white"></i>
+            <div className={`absolute inset-0 ${partners.length === 2 ? 'bg-violet-400/20' : 'bg-orange-400/20'} blur-3xl animate-pulse`}></div>
+            <div className={`relative w-40 h-40 ${partners.length === 2 ? 'bg-gradient-to-tr from-violet-400 to-purple-400' : 'bg-gradient-to-tr from-orange-400 to-rose-400'} rounded-[3rem] flex items-center justify-center shadow-2xl ${partners.length === 2 ? 'shadow-violet-200' : 'shadow-orange-200'} animate-in zoom-in duration-500`}>
+              <i className={`fa-solid ${partners.length === 2 ? 'fa-users' : 'fa-sparkles'} text-6xl text-white`}></i>
             </div>
           </div>
           <h2 className="text-4xl font-black text-center mb-4 text-stone-800 animate-in slide-in-from-bottom duration-700">
-            두근두근,<br/><span className="warm-text">연결되었습니다!</span>
+            {partners.length === 2 ? (
+              <>두근두근,<br/><span className="text-violet-500">트리플 연결!</span></>
+            ) : (
+              <>두근두근,<br/><span className="warm-text">연결되었습니다!</span></>
+            )}
           </h2>
           <div className="text-center mt-8 animate-in slide-in-from-bottom duration-700 delay-300">
-            <p className="text-stone-400 font-bold text-sm mb-2 uppercase tracking-widest">Match with</p>
-            <p className="text-3xl font-black text-stone-800">
-              {room.users[currentUser.currentMatchId].name} <span className="text-xl font-medium text-stone-400">님</span>
+            <p className="text-stone-400 font-bold text-sm mb-2 uppercase tracking-widest">
+              {partners.length === 2 ? 'Match with (3인 그룹)' : 'Match with'}
             </p>
+            <div className="space-y-2">
+              {partners.map((partner, idx) => (
+                <p key={partner.id} className={`text-2xl font-black ${partners.length === 2 ? 'text-violet-600' : 'text-stone-800'}`}>
+                  {partner.name} <span className="text-lg font-medium text-stone-400">님</span>
+                </p>
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -152,7 +184,7 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
       </div>
 
       {/* Navigation */}
-      {hasInitialized && !currentUser.currentMatchId && (
+      {hasInitialized && !isMatched && (
         <nav className="fixed bottom-6 left-6 right-6 h-20 bg-glass-dark rounded-[2rem] flex items-center justify-around px-4 z-50 shadow-2xl border-white">
           <button 
             onClick={() => setActiveTab('connect')}
