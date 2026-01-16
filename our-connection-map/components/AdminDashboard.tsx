@@ -4,6 +4,60 @@ import { Room, User, Connection } from '../types';
 import { store } from '../services/store';
 import ConnectionMap from './ConnectionMap';
 
+// 팀워크 명언 배열
+const TEAM_QUOTES = [
+  {
+    quote: "팀의 힘은 각 구성원이고, 각 구성원의 힘은 바로 팀이다.",
+    english: "The strength of the team is each individual member. The strength of each member is the team.",
+    author: "필 잭슨"
+  },
+  {
+    quote: "팀워크란 평범한 사람들이 비범한 결과를 낼 수 있게 하는 능력이다.",
+    english: "Teamwork is the ability to work together toward a common vision.",
+    author: "앤드류 카네기"
+  },
+  {
+    quote: "우리 중 누구도 우리 모두보다 현명할 수는 없다.",
+    english: "None of us is as smart as all of us.",
+    author: "켄 블랜차드"
+  },
+  {
+    quote: "같이 모이는 것은 시작이고, 함께 있는 것은 발전이며, 같이 일하는 것은 성공이다.",
+    english: "Coming together is a beginning, keeping together is progress, working together is success.",
+    author: "헨리 포드"
+  },
+  {
+    quote: "재능은 게임을 이기게 하지만, 팀워크와 이해력은 챔피언을 만든다.",
+    english: "Talent wins games, but teamwork and intelligence win championships.",
+    author: "마이클 조던"
+  },
+  {
+    quote: "비즈니스에서 위대한 일은 결코 한 사람이 하지 않는다. 그것은 팀에 의해서 이루어진다.",
+    english: "Great things in business are never done by one person. They're done by a team of people.",
+    author: "스티브 잡스"
+  },
+  {
+    quote: "재무, 전략, 기술이 아니다. 팀워크야말로 궁극적인 경쟁 우위다.",
+    english: "Not finance. Not strategy. Not technology. It is teamwork that remains the ultimate competitive advantage.",
+    author: "패트릭 렌시오니"
+  },
+  {
+    quote: "당신의 마인드나 전략이 아무리 훌륭해도, 혼자 하는 게임이라면 당신은 언제나 팀에게 질 것이다.",
+    english: "No matter how brilliant your mind or strategy, if you're playing a solo game, you'll always lose out to a team.",
+    author: "리드 호프만"
+  },
+  {
+    quote: "개인의 헌신이 집단의 노력으로 이어질 때, 그것이 바로 팀이 작동하는 방식이다.",
+    english: "Individual commitment to a group effort - that is what makes a team work, a company work, a society work.",
+    author: "빈스 롬바르디"
+  },
+  {
+    quote: "개별적으로 우리는 한 방울의 물일 뿐이지만, 함께라면 우리는 바다가 된다.",
+    english: "Individually, we are one drop. Together, we are an ocean.",
+    author: "류노스케 사토로"
+  }
+];
+
 interface Props {
   room: Room;
   onGoBack: () => void;
@@ -14,6 +68,7 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
   const [showUserList, setShowUserList] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showConnectionDetails, setShowConnectionDetails] = useState(false);
+  const [currentQuoteIndex, setCurrentQuoteIndex] = useState(0);
 
   // room.users가 undefined일 수 있으므로 안전하게 접근
   const users = room.users || {};
@@ -51,6 +106,14 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
   useEffect(() => {
     setParticipantCount(Object.keys(users).length);
   }, [users]);
+
+  // 10초마다 명언 회전
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentQuoteIndex((prev) => (prev + 1) % TEAM_QUOTES.length);
+    }, 10000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleStart = () => {
     store.updateRoomStatus('running');
@@ -380,14 +443,33 @@ const AdminDashboard: React.FC<Props> = ({ room, onGoBack }) => {
       <main className="flex-1 relative overflow-hidden">
         <ConnectionMap users={Object.values(users)} connections={connections} />
 
-        {/* Floating Message */}
-        <div className="absolute top-10 left-10 z-10 p-8 bg-glass rounded-[2rem] max-w-sm pointer-events-none shadow-xl border-white/60">
+        {/* Floating Message - 회전하는 명언 */}
+        <div className="absolute top-10 left-10 z-10 p-8 bg-glass rounded-[2rem] max-w-md pointer-events-none shadow-xl border-white/60">
           <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center mb-4">
             <i className="fa-solid fa-quote-left text-orange-500 text-xs"></i>
           </div>
-          <p className="text-lg font-medium leading-relaxed italic text-stone-700">
-            "우리는 서로 다른 곳에서 왔지만, 보이지 않는 수많은 끈으로 이미 연결되어 있습니다."
-          </p>
+          <div key={currentQuoteIndex} className="animate-in fade-in duration-500">
+            <p className="text-lg font-medium leading-relaxed italic text-stone-700 mb-3">
+              "{TEAM_QUOTES[currentQuoteIndex].quote}"
+            </p>
+            <p className="text-xs text-stone-400 italic mb-2">
+              {TEAM_QUOTES[currentQuoteIndex].english}
+            </p>
+            <p className="text-sm font-bold text-orange-500">
+              - {TEAM_QUOTES[currentQuoteIndex].author}
+            </p>
+          </div>
+          {/* 진행 표시기 */}
+          <div className="flex gap-1 mt-4">
+            {TEAM_QUOTES.map((_, idx) => (
+              <div
+                key={idx}
+                className={`h-1 rounded-full transition-all duration-300 ${
+                  idx === currentQuoteIndex ? 'w-4 bg-orange-400' : 'w-1 bg-stone-200'
+                }`}
+              />
+            ))}
+          </div>
         </div>
 
         {/* User List Sidebar */}

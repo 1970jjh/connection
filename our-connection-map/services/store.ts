@@ -223,7 +223,7 @@ class GameStore {
     );
   }
 
-  // 사용자 매칭 (홀수일 경우 3인 그룹 지원)
+  // 사용자 매칭 (홀수일 경우 3인 그룹 지원, 이미 만난 사람은 절대 재매칭 안함)
   async matchUsers() {
     if (!this.state || this.state.status !== 'running') return;
 
@@ -250,6 +250,11 @@ class GameStore {
     const matchedPairs: string[][] = []; // 2인 또는 3인 그룹
     const usedIds = new Set<string>();
 
+    // 새로운 매칭 가능 여부 확인 함수
+    const canMatch = (u1: User, u2: User): boolean => {
+      return !u1.metUserIds.includes(u2.id) && !u2.metUserIds.includes(u1.id);
+    };
+
     // 홀수인 경우 첫 번째로 3인 그룹 만들기
     if (shuffled.length >= 3 && shuffled.length % 2 === 1) {
       // 서로 만나지 않은 3명 찾기
@@ -258,11 +263,11 @@ class GameStore {
         const u1 = shuffled[i];
         for (let j = i + 1; j < shuffled.length && !foundTriple; j++) {
           const u2 = shuffled[j];
-          if (u1.metUserIds.includes(u2.id)) continue;
+          if (!canMatch(u1, u2)) continue;
 
           for (let k = j + 1; k < shuffled.length && !foundTriple; k++) {
             const u3 = shuffled[k];
-            if (u1.metUserIds.includes(u3.id) || u2.metUserIds.includes(u3.id)) continue;
+            if (!canMatch(u1, u3) || !canMatch(u2, u3)) continue;
 
             // 3명 모두 서로 처음 만남
             matchedPairs.push([u1.id, u2.id, u3.id]);
@@ -273,18 +278,9 @@ class GameStore {
           }
         }
       }
-
-      // 완벽한 3인 조합을 못 찾으면, 최선의 3인 조합 (이미 만난 사람 포함)
-      if (!foundTriple && shuffled.length >= 3) {
-        const [u1, u2, u3] = shuffled.slice(0, 3);
-        matchedPairs.push([u1.id, u2.id, u3.id]);
-        usedIds.add(u1.id);
-        usedIds.add(u2.id);
-        usedIds.add(u3.id);
-      }
     }
 
-    // 남은 사용자들 2인 매칭
+    // 남은 사용자들 2인 매칭 (이미 만난 사람과는 절대 매칭하지 않음)
     for (let i = 0; i < shuffled.length; i++) {
       const u1 = shuffled[i];
       if (usedIds.has(u1.id)) continue;
@@ -293,7 +289,8 @@ class GameStore {
         const u2 = shuffled[j];
         if (usedIds.has(u2.id)) continue;
 
-        if (!u1.metUserIds.includes(u2.id)) {
+        // 이미 만난 적이 없는 경우에만 매칭
+        if (canMatch(u1, u2)) {
           matchedPairs.push([u1.id, u2.id]);
           usedIds.add(u1.id);
           usedIds.add(u2.id);
@@ -302,12 +299,8 @@ class GameStore {
       }
     }
 
-    // 아직 매칭 안 된 사람들 (이미 만난 사람들끼리도 매칭)
-    const stillAvailable = shuffled.filter(u => !usedIds.has(u.id));
-    while (stillAvailable.length >= 2) {
-      const [u1, u2] = stillAvailable.splice(0, 2);
-      matchedPairs.push([u1.id, u2.id]);
-    }
+    // 매칭되지 않은 사용자들은 대기 상태로 유지 (이미 만난 사람과는 매칭하지 않음)
+    // 다른 사람들의 연결이 끝나면 clearMatch에서 다시 matchUsers를 호출하여 크로스 매칭 시도
 
     if (matchedPairs.length > 0) {
       const updates: Record<string, any> = {};
