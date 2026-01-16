@@ -15,6 +15,8 @@ const MatchingSession: React.FC<Props> = ({ user, partners, onComplete }) => {
   const [countdown, setCountdown] = useState(5);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [hasSubmitted, setHasSubmitted] = useState(false);
+  const [allSubmitted, setAllSubmitted] = useState(false);
+  const [submittedUserIds, setSubmittedUserIds] = useState<string[]>([]);
 
   const groupSize = partners.length + 1;
   const allUserIds = [user.id, ...partners.map(p => p.id)].sort();
@@ -25,13 +27,41 @@ const MatchingSession: React.FC<Props> = ({ user, partners, onComplete }) => {
     partners.every(p => p.traits.includes(t))
   );
 
-  // 현재 연결 상태 확인 (이미 제출했는지)
+  // 현재 연결 상태 확인 (이미 제출했는지, 모든 파트너가 제출했는지)
   useEffect(() => {
-    const existingConn = store.findConnectionByUsers(allUserIds);
-    if (existingConn?.submittedBy?.includes(user.id)) {
-      setHasSubmitted(true);
+    const checkSubmissionStatus = () => {
+      const existingConn = store.findConnectionByUsers(allUserIds);
+      if (existingConn?.submittedBy) {
+        setSubmittedUserIds(existingConn.submittedBy);
+        if (existingConn.submittedBy.includes(user.id)) {
+          setHasSubmitted(true);
+        }
+        // 모든 참가자가 제출했는지 확인
+        if (existingConn.submittedBy.length === groupSize) {
+          setAllSubmitted(true);
+        }
+      }
+    };
+
+    checkSubmissionStatus();
+
+    // store 변경 구독하여 실시간으로 제출 상태 확인
+    const unsubscribe = store.subscribe(() => {
+      checkSubmissionStatus();
+    });
+
+    return () => unsubscribe();
+  }, [allUserIds, user.id, groupSize]);
+
+  // 모든 참가자가 제출하면 축하 화면 표시
+  useEffect(() => {
+    if (hasSubmitted && allSubmitted && !showHighFive) {
+      setShowHighFive(true);
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
+      }
     }
-  }, [allUserIds, user.id]);
+  }, [hasSubmitted, allSubmitted, showHighFive]);
 
   useEffect(() => {
     if (showHighFive && countdown > 0) {
@@ -64,10 +94,10 @@ const MatchingSession: React.FC<Props> = ({ user, partners, onComplete }) => {
       );
 
       if ('vibrate' in navigator) {
-        navigator.vibrate([200, 100, 200]);
+        navigator.vibrate([100, 50, 100]);
       }
       setHasSubmitted(true);
-      setShowHighFive(true);
+      // showHighFive는 모든 파트너가 제출하면 자동으로 설정됨
     } catch (error) {
       console.error('제출 오류:', error);
       setIsSubmitting(false);
@@ -159,13 +189,42 @@ const MatchingSession: React.FC<Props> = ({ user, partners, onComplete }) => {
 
       {/* 개별 작성 안내 */}
       {hasSubmitted ? (
-        <div className="flex-1 flex flex-col items-center justify-center space-y-4">
+        <div className="flex-1 flex flex-col items-center justify-center space-y-6">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center">
             <i className="fa-solid fa-check text-4xl text-green-500"></i>
           </div>
           <p className="text-lg font-bold text-stone-600">제출 완료!</p>
+
+          {/* 제출 현황 표시 */}
+          <div className="bg-white/60 rounded-2xl p-4 w-full max-w-xs">
+            <p className="text-xs text-stone-400 font-bold uppercase tracking-widest mb-3 text-center">
+              제출 현황 ({submittedUserIds.length}/{groupSize})
+            </p>
+            <div className="space-y-2">
+              {/* 나 */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-bold text-stone-600">{user.name} (나)</span>
+                <i className="fa-solid fa-check-circle text-green-500"></i>
+              </div>
+              {/* 파트너들 */}
+              {partners.map(partner => (
+                <div key={partner.id} className="flex items-center justify-between">
+                  <span className="text-sm font-bold text-stone-600">{partner.name}</span>
+                  {submittedUserIds.includes(partner.id) ? (
+                    <i className="fa-solid fa-check-circle text-green-500"></i>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-stone-400">작성 중</span>
+                      <i className="fa-solid fa-spinner animate-spin text-orange-400"></i>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
           <p className="text-sm text-stone-400 text-center">
-            파트너가 제출을 완료하면<br/>함께 다음 단계로 넘어갑니다.
+            모든 파트너가 제출을 완료하면<br/>함께 다음 단계로 넘어갑니다.
           </p>
         </div>
       ) : (
