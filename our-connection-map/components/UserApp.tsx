@@ -5,6 +5,7 @@ import { store } from '../services/store';
 import TraitsForm from './TraitsForm';
 import MatchingSession from './MatchingSession';
 import UserHistory from './UserHistory';
+import ConnectionMap from './ConnectionMap';
 
 interface Props {
   user: User;
@@ -12,7 +13,7 @@ interface Props {
   onGoBack: () => void;
 }
 
-type UserTab = 'connect' | 'history' | 'profile';
+type UserTab = 'connect' | 'history' | 'profile' | 'network';
 
 const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
   const [activeTab, setActiveTab] = useState<UserTab>('connect');
@@ -81,6 +82,36 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
       return <TraitsForm onSubmit={handleTraitsSubmit} />;
     }
 
+    // 세션 종료 시 네트워크 맵 또는 기록 표시
+    if (room.status === 'completed') {
+      if (activeTab === 'history') {
+        return <UserHistory user={currentUser} room={room} />;
+      }
+      // 기본: 네트워크 맵 표시
+      return (
+        <div className="flex-1 flex flex-col animate-in fade-in duration-500 pb-28">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-black text-stone-800 mb-2">연결고리 완료!</h2>
+            <p className="text-stone-500 font-medium">
+              모든 참가자의 연결 네트워크를 확인해보세요
+            </p>
+            <div className="flex justify-center gap-4 mt-4">
+              <span className="px-4 py-2 bg-emerald-100 rounded-full text-emerald-600 text-xs font-bold">
+                <i className="fa-solid fa-star mr-1"></i>
+                내 점수: {currentUser.score || 0}점
+              </span>
+              <span className="px-4 py-2 bg-orange-100 rounded-full text-orange-600 text-xs font-bold">
+                {currentUser.metUserIds.length}명과 연결
+              </span>
+            </div>
+          </div>
+          <div className="flex-1 bg-white/40 rounded-3xl overflow-hidden shadow-xl border border-white/60" style={{ minHeight: '400px' }}>
+            <ConnectionMap users={Object.values(users)} connections={room.connections || []} />
+          </div>
+        </div>
+      );
+    }
+
     if (isMatched && partners.length > 0 && room.status === 'running') {
       return (
         <MatchingSession
@@ -108,7 +139,7 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
                   <i className="fa-solid fa-heart text-4xl text-rose-500 animate-pulse"></i>
                 </div>
             </div>
-            
+
             <div className="text-center space-y-3">
                 <h2 className="text-3xl font-black text-stone-800">새로운 인연을<br/>기다리고 있어요</h2>
                 <p className="text-stone-500 font-medium">강사님이 "연결고리"를 시작하면<br/>자동으로 동료가 매칭됩니다.</p>
@@ -183,24 +214,44 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
         {renderContent()}
       </div>
 
-      {/* Navigation */}
-      {hasInitialized && !isMatched && (
+      {/* Navigation - 세션 종료 시 */}
+      {hasInitialized && room.status === 'completed' && (
         <nav className="fixed bottom-6 left-6 right-6 h-20 bg-glass-dark rounded-[2rem] flex items-center justify-around px-4 z-50 shadow-2xl border-white">
-          <button 
+          <button
+            onClick={() => setActiveTab('network')}
+            className={`flex flex-col items-center space-y-1 transition-all flex-1 ${activeTab !== 'history' ? 'text-violet-500' : 'text-stone-300'}`}
+          >
+            <i className={`fa-solid fa-diagram-project text-xl ${activeTab !== 'history' ? 'scale-110' : ''}`}></i>
+            <span className="text-[10px] font-black uppercase">네트워크</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('history')}
+            className={`flex flex-col items-center space-y-1 transition-all flex-1 ${activeTab === 'history' ? 'text-rose-500' : 'text-stone-300'}`}
+          >
+            <i className={`fa-solid fa-compass text-xl ${activeTab === 'history' ? 'scale-110' : ''}`}></i>
+            <span className="text-[10px] font-black uppercase">기록</span>
+          </button>
+        </nav>
+      )}
+
+      {/* Navigation - 진행 중 */}
+      {hasInitialized && !isMatched && room.status !== 'completed' && (
+        <nav className="fixed bottom-6 left-6 right-6 h-20 bg-glass-dark rounded-[2rem] flex items-center justify-around px-4 z-50 shadow-2xl border-white">
+          <button
             onClick={() => setActiveTab('connect')}
             className={`flex flex-col items-center space-y-1 transition-all flex-1 ${activeTab === 'connect' ? 'text-orange-500' : 'text-stone-300'}`}
           >
             <i className={`fa-solid fa-link text-xl ${activeTab === 'connect' ? 'scale-110' : ''}`}></i>
             <span className="text-[10px] font-black uppercase">연결</span>
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('history')}
             className={`flex flex-col items-center space-y-1 transition-all flex-1 ${activeTab === 'history' ? 'text-rose-500' : 'text-stone-300'}`}
           >
             <i className="fa-solid fa-compass text-xl"></i>
             <span className="text-[10px] font-black uppercase">기록</span>
           </button>
-          <button 
+          <button
             onClick={() => setActiveTab('profile')}
             className={`flex flex-col items-center space-y-1 transition-all flex-1 ${activeTab === 'profile' ? 'text-amber-600' : 'text-stone-300'}`}
           >

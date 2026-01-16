@@ -15,13 +15,105 @@ const UserHistory: React.FC<Props> = ({ user, room }) => {
     myConnections.flatMap(c => c.userIds.filter(id => id !== user.id))
   ).size;
 
+  // 기록 다운로드 함수
+  const handleDownload = () => {
+    const lines: string[] = [];
+    const date = new Date().toLocaleDateString('ko-KR');
+
+    lines.push(`=======================================`);
+    lines.push(`  ${room.name}`);
+    lines.push(`  나의 연결고리 기록`);
+    lines.push(`=======================================`);
+    lines.push(``);
+    lines.push(`참가자: ${user.name} (${user.department})`);
+    lines.push(`총 점수: ${user.score || 0}점`);
+    lines.push(`연결된 동료: ${uniquePartnerCount}명`);
+    lines.push(`총 연결 횟수: ${myConnections.length}회`);
+    lines.push(`날짜: ${date}`);
+    lines.push(``);
+    lines.push(`---------------------------------------`);
+    lines.push(`  나의 특성 10가지`);
+    lines.push(`---------------------------------------`);
+    user.traits.forEach((t, idx) => {
+      lines.push(`  ${idx + 1}. ${t}`);
+    });
+    lines.push(``);
+    lines.push(`=======================================`);
+    lines.push(`  연결 기록`);
+    lines.push(`=======================================`);
+
+    myConnections.forEach((conn, idx) => {
+      const partnerIds = conn.userIds.filter(id => id !== user.id);
+      const partners = partnerIds.map(id => room.users[id]).filter(Boolean);
+      const isTriple = conn.groupSize === 3 || partners.length === 2;
+
+      lines.push(``);
+      lines.push(`---------------------------------------`);
+      lines.push(`  연결 #${idx + 1} ${isTriple ? '(트리플 연결)' : ''}`);
+      lines.push(`---------------------------------------`);
+      lines.push(`  파트너: ${partners.map(p => `${p.name} (${p.department})`).join(', ')}`);
+      lines.push(``);
+      lines.push(`  [함께 발견한 공통점]`);
+      if (conn.commonTraits.length > 0) {
+        conn.commonTraits.forEach(t => {
+          lines.push(`    • ${t}`);
+        });
+      } else {
+        lines.push(`    (없음)`);
+      }
+
+      if (conn.individualTraits && Object.keys(conn.individualTraits).length > 0) {
+        lines.push(``);
+        lines.push(`  [개별 작성 내역]`);
+        Object.entries(conn.individualTraits).forEach(([authorId, traits]) => {
+          const author = room.users[authorId];
+          const isMe = authorId === user.id;
+          const authorName = isMe ? `${author?.name || '?'} (나)` : author?.name || '?';
+          lines.push(`    ${authorName}:`);
+          traits.forEach(t => {
+            lines.push(`      - ${t}`);
+          });
+        });
+      }
+    });
+
+    lines.push(``);
+    lines.push(`=======================================`);
+    lines.push(`  연결고리 - 우리들의 연결고리`);
+    lines.push(`=======================================`);
+
+    const content = lines.join('\n');
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `연결고리_${user.name}_${date.replace(/\./g, '-')}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex-1 flex flex-col space-y-8 animate-in fade-in duration-500 overflow-y-auto pb-32">
       <div className="space-y-2">
-        <h2 className="text-3xl font-black text-stone-800">연결된 동료들</h2>
-        <p className="text-stone-500 font-medium">
-          소중한 인연이 벌써 {uniquePartnerCount}명이나 생겼어요!
-        </p>
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-3xl font-black text-stone-800">연결된 동료들</h2>
+            <p className="text-stone-500 font-medium">
+              소중한 인연이 벌써 {uniquePartnerCount}명이나 생겼어요!
+            </p>
+          </div>
+          {myConnections.length > 0 && (
+            <button
+              onClick={handleDownload}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-400 to-rose-400 text-white rounded-xl font-bold text-sm shadow-md hover:shadow-lg transition-all active:scale-95"
+            >
+              <i className="fa-solid fa-download"></i>
+              다운로드
+            </button>
+          )}
+        </div>
         <div className="flex items-center gap-4 mt-2">
           <span className="px-3 py-1 bg-emerald-100 rounded-full text-emerald-600 text-xs font-bold">
             <i className="fa-solid fa-star mr-1"></i>
