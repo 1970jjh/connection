@@ -366,6 +366,45 @@ class GameStore {
     // 잠시 후 새로운 매칭 시도
     setTimeout(() => this.matchUsers(), 1000);
   }
+
+  // 수동 매칭 시작 (직접 연결하기 기능)
+  async startManualMatch(userId: string, partnerIds: string[]) {
+    if (!this.state) return;
+
+    const roomRef = doc(db, 'rooms', ROOM_DOC_ID);
+    const updates: Record<string, any> = {};
+
+    const allUserIds = [userId, ...partnerIds];
+
+    // 이미 매칭 중인 사용자가 있는지 확인
+    for (const id of allUserIds) {
+      const user = this.state.users[id];
+      if (!user) return;
+      if (user.currentMatchId || user.currentMatchIds?.length) {
+        console.log(`User ${id} is already in a match`);
+        return;
+      }
+    }
+
+    if (partnerIds.length === 1) {
+      // 2인 매칭
+      const partnerId = partnerIds[0];
+      updates[`users.${userId}.currentMatchId`] = partnerId;
+      updates[`users.${partnerId}.currentMatchId`] = userId;
+      // currentMatchIds 초기화
+      updates[`users.${userId}.currentMatchIds`] = deleteField();
+      updates[`users.${partnerId}.currentMatchIds`] = deleteField();
+    } else {
+      // 3인 매칭
+      allUserIds.forEach(id => {
+        const otherIds = allUserIds.filter(otherId => otherId !== id);
+        updates[`users.${id}.currentMatchIds`] = otherIds;
+        updates[`users.${id}.currentMatchId`] = deleteField();
+      });
+    }
+
+    await updateDoc(roomRef, updates);
+  }
 }
 
 export const store = new GameStore();

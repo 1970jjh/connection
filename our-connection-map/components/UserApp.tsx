@@ -6,6 +6,7 @@ import TraitsForm from './TraitsForm';
 import MatchingSession from './MatchingSession';
 import UserHistory from './UserHistory';
 import ConnectionMap from './ConnectionMap';
+import ManualConnect from './ManualConnect';
 
 interface Props {
   user: User;
@@ -20,6 +21,7 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
   const [currentUser, setCurrentUser] = useState<User>(user);
   const [hasInitialized, setHasInitialized] = useState(user.traits.length === 10);
   const [showMatchSplash, setShowMatchSplash] = useState(false);
+  const [showManualConnect, setShowManualConnect] = useState(false);
   const prevMatchId = useRef<string | undefined>(undefined);
   const isFirstRender = useRef(true);
 
@@ -145,6 +147,20 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
                 <p className="text-stone-500 font-medium">강사님이 "연결고리"를 시작하면<br/>자동으로 동료가 매칭됩니다.</p>
             </div>
 
+            {/* 직접 연결하기 버튼 - 세션이 진행 중일 때만 표시 */}
+            {room.status === 'running' && Object.keys(users).length > 1 && (
+              <button
+                onClick={() => setShowManualConnect(true)}
+                className="flex items-center gap-3 px-6 py-4 bg-gradient-to-r from-teal-500 to-emerald-500 text-white rounded-2xl font-bold shadow-lg shadow-teal-200 hover:shadow-xl transition-all active:scale-95"
+              >
+                <i className="fa-solid fa-user-plus text-lg"></i>
+                <div className="text-left">
+                  <p className="text-sm font-bold">직접 연결하기</p>
+                  <p className="text-[10px] text-teal-100 font-medium">파트너를 직접 선택해서 연결</p>
+                </div>
+              </button>
+            )}
+
             <div className="bg-glass p-8 rounded-[2.5rem] w-full shadow-lg border-white">
                 <div className="flex justify-between items-center mb-6">
                     <h3 className="text-xs text-orange-600 font-black uppercase tracking-widest">My Discovery</h3>
@@ -259,6 +275,19 @@ const UserApp: React.FC<Props> = ({ user, room, onGoBack }) => {
             <span className="text-[10px] font-black uppercase">프로필</span>
           </button>
         </nav>
+      )}
+
+      {/* 수동 연결 모달 */}
+      {showManualConnect && (
+        <ManualConnect
+          user={currentUser}
+          room={room}
+          onClose={() => setShowManualConnect(false)}
+          onStartSession={(partners) => {
+            setShowManualConnect(false);
+            // 매칭이 시작되면 MatchingSession으로 자동 전환됨
+          }}
+        />
       )}
     </div>
   );
